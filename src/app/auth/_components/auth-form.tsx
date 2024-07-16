@@ -1,75 +1,119 @@
 'use client'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { useForm } from "react-hook-form"
-import { signIn } from "next-auth/react"
-import { toast } from "@/components/ui/use-toast"
-import { CardContent, Card } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { RocketIcon } from "@radix-ui/react-icons";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import { toast } from "@/components/ui/use-toast";
+import { Label } from "@/components/ui/label";
+import { getUserByEmail } from "../actions";
+import { signIn } from 'next-auth/react'
 
 export function AuthForm() {
+  const form = useForm();
 
-  const form = useForm()
-  const handleSubmit = form.handleSubmit(async(data) => {
+  const handleSubmit = form.handleSubmit(async (data) => {
     try {
-        console.log(data)
-        await signIn('email', { email: data.email, redirect: false})
+      const user = await getUserByEmail(data.email);
+
+      if (!user) {
         toast({
-            title: "Email enviado",
-            description: "Verifique seu email para encontrar o Link de Login."
-        })
+          title: "Usuário não cadastrado ❌",
+          description: "Este usuário não está cadastrado. Entre em contato com o administrador.",
+        });
+        return;
+      }
+
+      // Inicia o processo de login com NextAuth
+      try{
+        await signIn('email', { email: data.email, redirect: false })
+
+        toast({
+          title: "Email enviado 📧",
+          description: "Verifique seu email para encontrar o Link de Login.",
+        });
+      }catch(error ){
+
+        toast({
+          title: "Erro ao enviar email 😕",
+          description: "Ocorreu um erro ao enviar o email de login. Por favor, tente novamente.",
+        });
+      }
     } catch (error) {
-        toast({
-            title: "Error",
-            description: "Ocorreu um Erro. Por favor, tente novamente."
-        })
+      console.error("Erro ao enviar email de login:", error);
+
+      toast({
+        title: "Erro ao enviar email 😕",
+        description: "Ocorreu um erro ao enviar o email de login. Por favor, tente novamente.",
+      });
     }
-  })
+  });
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gray-100 px-4 py-12 dark:bg-gray-950">
-      <div className="mx-auto w-full max-w-md space-y-8">
-        <div>
-          <RocketIcon
-            className="mx-auto h-12 w-auto"
-            height={48}
-            style={{
-              aspectRatio: "48/48",
-              objectFit: "cover",
-            }}
-            width={48}
-          />
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-50">
-           Entrar com um link mágico
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Sem necessidade de senha. Enviaremos um link de login seguro para você.
-          </p>
+    <div className="flex min-h-[100vh] flex-col items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-md space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Bem-vindo de volta! 👋</h1>
+          <p className="text-muted-foreground">Faça login na sua conta para continuar.</p>
         </div>
-        <Card>
-          <CardContent className="space-y-4">
-            <br/>
-            <div>
-              <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="email">
-                Endereço de e-mail
-              </Label>
-              <div className="mt-1">
-              <Input className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:border-gray-600 dark:bg-gray-950 dark:text-gray-50 dark:placeholder-gray-400" id="email" placeholder="Digite seu email" type="email" {...form.register('email')}/>
-              </div>
-            </div>
-            <Button className="w-full bg-green-600 text-white" type="submit" disabled={form.formState.isSubmitting} onClick={handleSubmit}>
-              {form.formState.isSubmitting ? 'Enviando...' : 'Enviar link de Login'}
+        <form className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="email@bolt360.com.br"
+              required
+              {...form.register('email')}
+            />
+          </div>
+          <Button type="submit" 
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+          onClick={handleSubmit}
+          >
+            <WandIcon className="mr-2 h-4 w-4" />
+            {form.formState.isSubmitting ? 'Enviando...' : 'Entrar com Link Mágico'}
           </Button>
-          </CardContent>
-        </Card>
-        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-px flex-1 bg-muted" />
+            <p className="px-4 text-muted-foreground">Bolt 360</p>
+            <div className="h-px flex-1 bg-muted" />
+          </div>
+        </form>
+        <div className="text-center text-sm text-muted-foreground">
           <p>
-            A magic link is a secure login method that eliminates the need for a password. When you enter your email,
-            we'll send you a one-time link that you can use to sign in securely.
+            Um link mágico é um método seguro de login que elimina a necessidade de senha 🔐.
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+
+function WandIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15 4V2" />
+      <path d="M15 16v-2" />
+      <path d="M8 9h2" />
+      <path d="M20 9h2" />
+      <path d="M17.8 11.8 19 13" />
+      <path d="M15 9h0" />
+      <path d="M17.8 6.2 19 5" />
+      <path d="m3 21 9-9" />
+      <path d="M12.2 6.2 11 5" />
+    </svg>
   )
 }
