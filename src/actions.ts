@@ -6,6 +6,6 @@ export async function getUserBusiness(email: string) {
     console.log("Email:", email);
     return await prisma.user.findUnique({
         where: { email },
-        include: { empresa: true }  // Include the associated empresa (company)
+        include: { empresas: true }  // Include the associated empresa (company)
     });
 }

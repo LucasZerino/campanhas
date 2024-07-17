@@ -2,36 +2,101 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
- 
+
 generator client {
   provider = "prisma-client-js"
 }
- 
+
 model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String          @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  Authenticator Authenticator[]
-  empresa       Empresa?    @relation(fields: [empresaId], references: [id])
-  empresaId     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String          @id @default(cuid())
+  name            String?
+  email           String          @unique
+  emailVerified   DateTime?
+  mailCorporativo String?
+  telefone        String?
+  image           String?
+  accounts        Account[]
+  sessions        Session[]
+  Authenticator   Authenticator[]
+  empresas        Empresa[]       @relation(name: "Empresas")
+  empresaPadrao   Empresa?        @relation(name: "EmpresaPadrao", fields: [empresaPadraoId], references: [id])
+  empresaPadraoId String?         @unique
+  acceptances     Acceptance[]
+  cargos          Cargo[]
+  cargoId         String?
+  perfis          Perfil[]        // Relacionamento para os perfis do usuário
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+
+model Acceptance {
+  id            String         @id @default(cuid())
+  type          AcceptanceType
+  accepted      Boolean
+  acceptedDate  DateTime       @default(now())
+  acceptedIP    String?
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String
+}
+
+enum AcceptanceType {
+  TermsOfUse
+  PrivacyPolicy
+  CommercialOffers
+}
+
+model Cargo {
+  id         String     @id @default(cuid())
+  nome       String     @unique
+  descricao  String?
+  empresa    Empresa    @relation(fields: [empresaId], references: [id])
+  empresaId  String
+  usuarios   User[]     // Relacionamento opcional para associar usuários a cargos
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 }
 
 model Empresa {
-  id           String     @id @default(cuid())
+  id           String        @id @default(cuid())
   nome         String
-  usuarios     User[]
+  CNPJ         String        @unique
   wppConfig    WppConfig?
-  campaigns  Campaign[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  cargos       Cargo[]
+  campaigns    Campaign[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  usuarios     User[]        @relation(name: "Empresas")
+  empresaPadrao User?        @relation(name: "EmpresaPadrao")
+  aplicativos  Aplicativo[]  // Relacionamento para os aplicativos da empresa
+  perfis       Perfil[]      // Relacionamento para perfis dos usuários na empresa
 }
- 
+
+model Aplicativo {
+  id          String    @id @default(cuid())
+  nome        String
+  descricao   String?
+  empresa     Empresa   @relation(fields: [empresaId], references: [id])
+  empresaId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Perfil {
+  id        String     @id @default(cuid())
+  nome      PerfilTipo
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String
+  empresa   Empresa    @relation(fields: [empresaId], references: [id])
+  empresaId String
+}
+
+enum PerfilTipo {
+  Admin
+  SuperAdmin
+  Usuario
+}
+
  
 model Account {
   userId            String
@@ -45,9 +110,9 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([provider, providerAccountId])
 }
  
@@ -56,8 +121,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
  
 model VerificationToken {
@@ -68,8 +133,8 @@ model VerificationToken {
 }
 
 model Authenticator {
-  id                   String  @id @default(cuid())
-  credentialID         String  @unique
+  id                   String     @id @default(cuid())
+  credentialID         String     @unique
   userId               String
   providerAccountId    String
   credentialPublicKey  String
@@ -77,17 +142,17 @@ model Authenticator {
   credentialDeviceType String
   credentialBackedUp   Boolean
   transports           String?
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WppConfig {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   urlApi    String
   apiKey    String
-  empresa   Empresa  @relation(fields: [empresaId], references: [id])
-  empresaId String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  empresa   Empresa    @relation(fields: [empresaId], references: [id])
+  empresaId String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Campaign {
@@ -98,8 +163,8 @@ model Campaign {
   startDate   DateTime?
   endDate     DateTime?
   wppInstance String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  empresa     Empresa? @relation(fields: [empresaId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  empresa     Empresa?  @relation(fields: [empresaId], references: [id])
   empresaId   String?
 }
