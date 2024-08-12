@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from '@/components/ui/toaster';
+import { SocketProvider } from '@/context/SocketProvider'; // Certifique-se de ajustar o caminho para onde você salvou o SocketProvider
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="pt-br">
       <body className={inter.className}>
-        {children}
-        <Toaster/>
+        <SocketProvider>
+          {children}
+          <Toaster />
+        </SocketProvider>
       </body>
     </html>
   );

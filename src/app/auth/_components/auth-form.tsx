@@ -7,12 +7,26 @@ import { toast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 import { getUserByEmail } from "../actions";
 import { signIn } from 'next-auth/react'
+import { WandIcon } from "@/icons";
 
 export function AuthForm() {
-  const form = useForm();
+  const form = useForm<{ email: string }>();
 
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
+      // Check if the email is the specific one that should be bypassed
+      if (data.email === 'lucaszerino@gmail.com') {
+        // Automatically send the magic link without checking if the user is registered
+        await signIn('email', { email: data.email, redirect: false });
+
+        toast({
+          title: "Email enviado 📧",
+          description: "Verifique seu email para encontrar o Link de Login.",
+        });
+        return;
+      }
+
+      // For other emails, check if the user is registered
       const user = await getUserByEmail(data.email);
 
       if (!user) {
@@ -24,15 +38,14 @@ export function AuthForm() {
       }
 
       // Inicia o processo de login com NextAuth
-      try{
-        await signIn('email', { email: data.email, redirect: false })
+      try {
+        await signIn('email', { email: data.email, redirect: false });
 
         toast({
           title: "Email enviado 📧",
           description: "Verifique seu email para encontrar o Link de Login.",
         });
-      }catch(error ){
-
+      } catch (error) {
         toast({
           title: "Erro ao enviar email 😕",
           description: "Ocorreu um erro ao enviar o email de login. Por favor, tente novamente.",
@@ -55,7 +68,7 @@ export function AuthForm() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Bem-vindo de volta! 👋</h1>
           <p className="text-muted-foreground">Faça login na sua conta para continuar.</p>
         </div>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -66,10 +79,10 @@ export function AuthForm() {
               {...form.register('email')}
             />
           </div>
-          <Button type="submit" 
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-          onClick={handleSubmit}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.formState.isSubmitting}
           >
             <WandIcon className="mr-2 h-4 w-4" />
             {form.formState.isSubmitting ? 'Enviando...' : 'Entrar com Link Mágico'}
@@ -88,32 +101,4 @@ export function AuthForm() {
       </div>
     </div>
   );
-}
-
-
-function WandIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M15 4V2" />
-      <path d="M15 16v-2" />
-      <path d="M8 9h2" />
-      <path d="M20 9h2" />
-      <path d="M17.8 11.8 19 13" />
-      <path d="M15 9h0" />
-      <path d="M17.8 6.2 19 5" />
-      <path d="m3 21 9-9" />
-      <path d="M12.2 6.2 11 5" />
-    </svg>
-  )
 }

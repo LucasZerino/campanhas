@@ -6,11 +6,11 @@ import { createTransport } from "nodemailer";
 
 const { auth, handlers, signIn, signOut } = NextAuth({
   pages: {
-    signIn: '/auth/signin', // Exemplo de rota para página de login
-    signOut: '/auth/signout', // Exemplo de rota para página de logout
+    signIn: '/auth', // Exemplo de rota para página de login
+    signOut: '/', // Exemplo de rota para página de logout
     error: '/auth/error', // Exemplo de rota para página de erro
     verifyRequest: '/auth/verify-request', // Exemplo de rota para página de verificação de solicitação
-    newUser: '/auth/new-user', // Exemplo de rota para página de novo usuário
+    newUser: '/main', // Exemplo de rota para página de novo usuário
   },
   adapter: PrismaAdapter(prisma),
   providers: [

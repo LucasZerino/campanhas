@@ -1,5 +1,7 @@
-'use client'
+"use client";
+
 import { useEffect, useState } from 'react';
+import { useSocket } from '@/context/SocketProvider';
 import { Button } from "@/components/ui/button";
 import { BuildingIcon, ChevronDownIcon } from "@/icons/index";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -9,7 +11,7 @@ import { signOut } from 'next-auth/react';
 
 type User = {
   id: string;
-  name: string;
+  name: string | null;
 };
 
 type Company = {
@@ -17,13 +19,18 @@ type Company = {
   nome: string;
 };
 
-const getInitials = (name: string) => {
+const getInitials = (name: string | null) => {
+  if (!name) {
+    return "NN";
+  }
+
   const names = name.split(' ');
   const initials = names.map(name => name.charAt(0)).join('');
   return initials.slice(0, 2).toUpperCase();
 };
 
 const Header = ({ user }: { user: User }) => {
+  const { socket } = useSocket();
   const [preferredCompany, setPreferredCompany] = useState<Company | null>(null);
   const [userCompanies, setUserCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +54,23 @@ const Header = ({ user }: { user: User }) => {
     loadUserData();
   }, [user.id]);
 
+  useEffect(() => {
+    if (socket) {
+      socket.on('userUpdated', (updatedUser) => {
+        if (updatedUser.id === user.id) {
+          setPreferredCompany(updatedUser.empresaPadraoId);
+          setUserCompanies(updatedUser.empresas);
+        }
+      });
+
+      return () => {
+        socket.off('userUpdated');
+      };
+    }
+  }, [socket, user.id]);
+
   if (loading) {
-    return <div>Carregando...</div>; // Ou qualquer outro indicador de carregamento
+    return <div>Carregando...</div>;
   }
 
   const empresaPadraoNome = preferredCompany ? preferredCompany.nome : "Selecione uma empresa";
@@ -77,13 +99,13 @@ const Header = ({ user }: { user: User }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage alt={user.name} src="/placeholder-avatar.jpg" />
+                  <AvatarImage alt={user.name || 'Usuário'} src="/placeholder-avatar.jpg" />
                   <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+              <DropdownMenuLabel>{user.name || 'Usuário'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Perfil</DropdownMenuItem>
               <DropdownMenuItem>Configurações</DropdownMenuItem>
